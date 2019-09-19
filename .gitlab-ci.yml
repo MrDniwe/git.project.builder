@@ -1,0 +1,31 @@
+stages:
+  - build
+  - deploy
+
+variables:
+  CONTAINER_STAGING_IMAGE: registry.redirectme.net/gitbuilder:latest
+
+build_develop:
+  stage: build
+  tags:
+    - dockerhttp
+  script:
+    - docker login -u $REGISTRY_LOGIN -p $REGISTRY_PASSWORD registry.redirectme.net
+    - docker build -t $CONTAINER_STAGING_IMAGE .
+    - docker push $CONTAINER_STAGING_IMAGE
+  only:
+    - develop
+
+restart_develop:
+  stage: deploy
+  tags:
+    - shell
+  script:
+    - mkdir -p ~/.ssh
+    - echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config
+    - sshpass -V
+    - export SSHPASS=$DEPLOY_PASS
+    - sshpass -e ssh $DEPLOY_USER@$DEPLOY_HOST '/var/server/deploy.sh' $REGISTRY_LOGIN $REGISTRY_PASSWORD $CONTAINER_STAGING_IMAGE $PROJECT_SUBPATH
+  only:
+    - develop
+

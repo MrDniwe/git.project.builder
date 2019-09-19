@@ -1,0 +1,1 @@
+alter table build add column attempts smallint default 0;
